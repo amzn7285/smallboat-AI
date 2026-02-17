@@ -1,0 +1,7 @@
+{
+  "name": "SMALLBOAT AI: Next-Gen Brand Architect",
+  "description": "A high-end AI platform for entrepreneurs to build, visualize, and strategize their next big venture using advanced Gemini-powered insights and live voice consulting.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
