@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppState, BrandIdentity, MarketInsight } from './types';
 import { generateBrandStrategy, getMarketInsights, generateLogo } from './services/geminiService';

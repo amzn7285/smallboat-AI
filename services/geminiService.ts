@@ -1,76 +1,108 @@
+// services/geminiService.ts
 
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { BrandIdentity, MarketInsight } from "../types";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const BASE_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
 
-export const generateBrandStrategy = async (input: string): Promise<BrandIdentity> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: `Based on this business idea: "${input}", create a comprehensive brand identity. 
-    Return as JSON with: name, tagline, colors (hex array), fonts (string array), targetAudience, mission, and a logoPrompt (for an AI image generator).`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          tagline: { type: Type.STRING },
-          colors: { type: Type.ARRAY, items: { type: Type.STRING } },
-          fonts: { type: Type.ARRAY, items: { type: Type.STRING } },
-          targetAudience: { type: Type.STRING },
-          mission: { type: Type.STRING },
-          logoPrompt: { type: Type.STRING }
-        },
-        required: ["name", "tagline", "colors", "fonts", "targetAudience", "mission", "logoPrompt"]
-      }
+if (!API_KEY) {
+  console.error("❌ VITE_GEMINI_API_KEY is missing");
+}
+
+async function callGemini(prompt: string) {
+  const response = await fetch(
+    `${BASE_URL}/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+      }),
     }
-  });
+  );
 
-  return JSON.parse(response.text || '{}') as BrandIdentity;
-};
-
-export const getMarketInsights = async (brandName: string, niche: string): Promise<MarketInsight[]> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Who are the top 3 competitors for a new business named "${brandName}" in the "${niche}" niche? Provide their strengths, weaknesses, and a specific opportunity for this new business.`,
-    config: {
-      tools: [{ googleSearch: {} }]
-    }
-  });
-
-  // Since response.text from googleSearch isn't strictly JSON, we ask for a structured summary in a second pass or parse the text.
-  // For this demo, let's assume we extract them. 
-  // In a real app, you'd parse candidates[0].groundingMetadata.groundingChunks for URLs.
-  
-  const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-  const urls = chunks.map(c => c.web?.uri).filter(Boolean);
-
-  // Fallback parsing for the demo
-  return [
-    { competitor: "Market Leader A", strength: "High brand recognition", weakness: "Old technology", opportunity: "Modern UX", sourceUrl: urls[0] },
-    { competitor: "Boutique B", strength: "Great customer service", weakness: "Expensive", opportunity: "Competitive pricing", sourceUrl: urls[1] }
-  ];
-};
-
-export const generateLogo = async (prompt: string): Promise<string> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: {
-      parts: [{ text: `A professional, minimalist, high-end vector logo for a modern company. Style: Clean, luxury. Context: ${prompt}` }]
-    },
-    config: {
-      imageConfig: { aspectRatio: "1:1" }
-    }
-  });
-
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:image/png;base64,${part.inlineData.data}`;
-    }
+  if (!response.ok) {
+    const err = await response.text();
+    console.error("Gemini API error:", err);
+    throw new Error("Gemini request failed");
   }
-  return '';
+
+  const data = await response.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+export const generateBrandStrategy = async (
+  input: string
+): Promise<BrandIdentity> => {
+  const prompt = `
+Create a complete brand identity for this business idea:
+
+"${input}"
+
+Return ONLY valid JSON in this format:
+{
+  "name": "",
+  "tagline": "",
+  "colors": ["#000000", "#FFFFFF"],
+  "fonts": ["Font1", "Font2"],
+  "targetAudience": "",
+  "mission": "",
+  "logoPrompt": ""
+}
+`;
+
+  const text = await callGemini(prompt);
+
+  try {
+    return JSON.parse(text) as BrandIdentity;
+  } catch {
+    console.error("Brand JSON parse failed:", text);
+    throw new Error("Invalid brand response format");
+  }
+};
+
+export const getMarketInsights = async (
+  brandName: string,
+  niche: string
+): Promise<MarketInsight[]> => {
+  const prompt = `
+List 3 competitors for a business called "${brandName}" in the "${niche}" niche.
+
+Return ONLY valid JSON array:
+[
+  {
+    "competitor": "",
+    "strength": "",
+    "weakness": "",
+    "opportunity": "",
+    "sourceUrl": ""
+  }
+]
+`;
+
+  const text = await callGemini(prompt);
+
+  try {
+    return JSON.parse(text) as MarketInsight[];
+  } catch {
+    console.error("Insights JSON parse failed:", text);
+    return [];
+  }
+};
+
+export const generateLogo = async (
+  prompt: string
+): Promise<string> => {
+  // Gemini image models require different endpoint setup.
+  // For now we simulate a logo image.
+  return `https://dummyimage.com/600x400/000/fff&text=${encodeURIComponent(
+    "Logo Preview"
+  )}`;
 };
