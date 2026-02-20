@@ -44,7 +44,7 @@ function App() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#f4f4f4",
+        background: "linear-gradient(135deg, #2563eb, #1e3a8a)",
         fontFamily: "Arial, sans-serif",
       }}
     >
