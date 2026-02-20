@@ -21,7 +21,7 @@ function App() {
       setResponse("");
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: {
@@ -32,7 +32,16 @@ function App() {
               {
                 parts: [
                   {
-                    text: `Create a structured business plan for this idea:\n\n${idea}\n\nInclude:\n- Problem\n- Solution\n- Target Market\n- Revenue Model\n- Competitive Advantage`,
+                    text: `Create a structured business plan for this idea:
+
+${idea}
+
+Include:
+- Problem
+- Solution
+- Target Market
+- Revenue Model
+- Competitive Advantage`,
                   },
                 ],
               },
@@ -43,6 +52,11 @@ function App() {
 
       const data = await res.json();
       console.log("GEMINI RESPONSE:", data);
+
+      if (!res.ok) {
+        setResponse(JSON.stringify(data, null, 2));
+        return;
+      }
 
       const text =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
@@ -74,7 +88,7 @@ function App() {
           backgroundColor: "#ffffff",
           padding: "40px",
           borderRadius: "12px",
-          width: "600px",
+          width: "650px",
           boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
         }}
       >
