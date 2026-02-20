@@ -76,7 +76,7 @@ function App() {
             borderRadius: "6px",
             border: "1px solid #ccc",
             color: "#000000",
-            backgroundColor: "#ffffff",
+            backgroundColor: "#f4f4f4",
           }}
         />
 
