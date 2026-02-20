@@ -5,6 +5,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState("");
 
+  const API_KEY = "AIzaSyCf8x9LQIjgJ7AoFEbfHepNAR-E6h40xXE";
+
   const handleBuild = async () => {
     console.log("BUTTON CLICKED");
     console.log("IDEA VALUE:", idea);
@@ -16,19 +18,37 @@ function App() {
 
     try {
       setLoading(true);
+      setResponse("");
 
-      const res = await fetch("https://jsonplaceholder.typicode.com/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ idea }),
-      });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Create a structured business plan for this idea:\n\n${idea}\n\nInclude:\n- Problem\n- Solution\n- Target Market\n- Revenue Model\n- Competitive Advantage`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
 
       const data = await res.json();
-      console.log("API RESPONSE:", data);
+      console.log("GEMINI RESPONSE:", data);
 
-      setResponse("Success! Your idea was submitted.");
+      const text =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "No response generated.";
+
+      setResponse(text);
     } catch (error) {
       console.error("ERROR:", error);
       setResponse("Something went wrong.");
@@ -46,27 +66,25 @@ function App() {
         alignItems: "center",
         background: "linear-gradient(135deg, #2563eb, #1e3a8a)",
         fontFamily: "Arial, sans-serif",
+        padding: "20px",
       }}
     >
       <div
         style={{
           backgroundColor: "#ffffff",
           padding: "40px",
-          borderRadius: "10px",
-          width: "400px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+          borderRadius: "12px",
+          width: "600px",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
         }}
       >
         <h2 style={{ marginBottom: "20px" }}>
-          Describe Your Business Idea
+          AI Business Plan Generator
         </h2>
 
         <input
           value={idea}
-          onChange={(e) => {
-            console.log("Typing:", e.target.value);
-            setIdea(e.target.value);
-          }}
+          onChange={(e) => setIdea(e.target.value)}
           placeholder="e.g., AI-powered fitness app"
           style={{
             width: "100%",
@@ -75,8 +93,8 @@ function App() {
             fontSize: "16px",
             borderRadius: "6px",
             border: "1px solid #ccc",
-            color: "#000000",
-            backgroundColor: "#f4f4f4",
+            color: "#000",
+            backgroundColor: "#fff",
           }}
         />
 
@@ -94,13 +112,24 @@ function App() {
             cursor: "pointer",
           }}
         >
-          {loading ? "Building..." : "Build It Now"}
+          {loading ? "Generating..." : "Generate Business Plan"}
         </button>
 
         {response && (
-          <p style={{ marginTop: "20px", fontWeight: "bold" }}>
+          <pre
+            style={{
+              marginTop: "20px",
+              padding: "15px",
+              backgroundColor: "#f4f4f4",
+              borderRadius: "8px",
+              overflowX: "auto",
+              fontSize: "14px",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
             {response}
-          </p>
+          </pre>
         )}
       </div>
     </div>
